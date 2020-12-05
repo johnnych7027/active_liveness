@@ -91,7 +91,38 @@ def compare():
     except KeyError:
         return jsonify(code='BPE-002004', message='Не удалось прочитать биометрический шаблон'), 400
 
+
+@app.route('/v1/pattern/detect', methods=['POST'])
+def detect():
+    if request.mimetype != 'multipart/form-data':
         return jsonify(code='BPE-002001', message='Неверный Content-Type HTTP-запроса'), 400
+
+    metadata = json.loads(request.form['metadata'])
+    if metadata is None:
+        return jsonify(code='BPE-002001', message='invalid metadate'), 400
+
+    if metadata['mnemonic'] != 'move-instructions':
+        return jsonify(code='BPE-002001', message='invalid mnemonic'), 400
+
+    # actions = metadata['actions']
+    # MVP: assume that we get 1 file and 1 action
+    # if len(request.files) != len(actions):
+    #     return jsonify(code='BPE-002001', message='actions count mismatch with files count'), 400
+
+    video = request.files['bio_sample']
+    if video is None:
+        return jsonify(code='BPE-002001', message='invalid bio_sample'), 400
+
+    if video.content_type != 'video/mp4': # TODO move to cfg and add other formats
+        return jsonify(code='BPE-002001', message='invalid bio_sample content_type'), 400
+
+    # TODO remove. no need to save file on disk
+    # tmp_file = 'video_' + str(uuid.uuid4()) + '.jpg'
+    # video.save(tmp_file)
+
+    # TODO add neuron network
+
+    return make_response("", 200)
 
 
 if __name__ == "__main__":

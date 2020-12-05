@@ -1,5 +1,12 @@
 # active_liveness
 
+## Before start
+```bash
+pip install -r app/requirements.txt
+make install-pre-commit-fmt
+``` 
+
+### ШО-ЭТО-ЗА-ХУЕТА
 разархиваировать в app/
 https://drive.google.com/drive/folders/1MG1PCGT-uL6UE-aL0EdgLd6vH3FKiDaT?usp=sharing
 

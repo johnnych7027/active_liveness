@@ -26,24 +26,31 @@ def cosine_dist(x, y):
 
 
 # These are the extension that we are accepting to be uploaded
-app.config['ALLOWED_EXTENSIONS'] = {'wav'}
-app.config['ALLOWED_ACTION_TYPES'] = {'smile', 'blink'}
+app.config["ALLOWED_EXTENSIONS"] = {"wav"}
+app.config["ALLOWED_ACTION_TYPES"] = {"smile", "blink"}
 
 
 # For a given file, return whether it's an allowed type or not
 def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
+    return (
+        "." in filename
+        and filename.rsplit(".", 1)[1] in app.config["ALLOWED_EXTENSIONS"]
+    )
 
 
-@app.route('/v1/pattern/extract', methods=['POST'])
+@app.route("/v1/pattern/extract", methods=["POST"])
 def extract():
     # if request.files[''].content_type == 'audio/pcm':
-    if request.content_type != 'audio/pcm':
-        return jsonify(code='BPE-002001', message='Неверный Content-Type HTTP-запроса'), 400
+    if request.content_type != "audio/pcm":
+        return (
+            jsonify(code="BPE-002001", message="Неверный Content-Type HTTP-запроса"),
+            400,
+        )
     # file = request.files['']
-    filename = 'audio_' + str(uuid.uuid4()) + '.wav'
-    file = AudioSegment.from_file(io.BytesIO(request.get_data()), format="wav").export(filename, format='wav')
+    filename = "audio_" + str(uuid.uuid4()) + ".wav"
+    file = AudioSegment.from_file(io.BytesIO(request.get_data()), format="wav").export(
+        filename, format="wav"
+    )
 
     if file and allowed_file(file.name):
         # if file and allowed_file(file.filename):
@@ -60,26 +67,45 @@ def extract():
         try:
             res = json.loads(rec.FinalResult())
             os.remove(filename)
-            return Response(bytes(" ".join(str(x) for x in res["spk"]), encoding='utf8'),
-                            mimetype='application/octet-stream'), 200
+            return (
+                Response(
+                    bytes(" ".join(str(x) for x in res["spk"]), encoding="utf8"),
+                    mimetype="application/octet-stream",
+                ),
+                200,
+            )
         except KeyError:
             os.remove(filename)
-            return jsonify(code='BPE-002003', message='Не удалось прочитать биометрический образец'), 400
+            return (
+                jsonify(
+                    code="BPE-002003",
+                    message="Не удалось прочитать биометрический образец",
+                ),
+                400,
+            )
     else:
         os.remove(filename)
-        return jsonify(code='BPE-002003', message='Не удалось прочитать биометрический образец'), 400
+        return (
+            jsonify(
+                code="BPE-002003", message="Не удалось прочитать биометрический образец"
+            ),
+            400,
+        )
 
 
-@app.route('/v1/pattern/compare', methods=['POST'])
+@app.route("/v1/pattern/compare", methods=["POST"])
 def compare():
     # if request.files['bio_feature'].content_type == 'application/octet-stream' and request.files['bio_template'].content_type == 'application/octet-stream':
-    if request.mimetype != 'multipart/form-data':
-        return jsonify(code='BPE-002001', message='Неверный Content-Type HTTP-запроса'), 400
+    if request.mimetype != "multipart/form-data":
+        return (
+            jsonify(code="BPE-002001", message="Неверный Content-Type HTTP-запроса"),
+            400,
+        )
     try:
         # bio_feature_data = request.files['bio_feature'].stream.read()
         # bio_template_data = request.files['bio_template'].stream.read()
-        bio_feature_data = request.form['bio_feature']
-        bio_template_data = request.form['bio_template']
+        bio_feature_data = request.form["bio_feature"]
+        bio_template_data = request.form["bio_template"]
 
         # bio_feature = [float(x) for x in bio_feature_data.decode("utf-8").split()]
         # bio_template = [float(y) for y in bio_template_data.decode("utf-8").split()]
@@ -89,32 +115,43 @@ def compare():
         result = cosine_dist(bio_template, bio_feature)
         return jsonify(score=result), 200
     except KeyError:
-        return jsonify(code='BPE-002004', message='Не удалось прочитать биометрический шаблон'), 400
+        return (
+            jsonify(
+                code="BPE-002004", message="Не удалось прочитать биометрический шаблон"
+            ),
+            400,
+        )
 
 
-@app.route('/v1/pattern/detect', methods=['POST'])
+@app.route("/v1/pattern/detect", methods=["POST"])
 def detect():
-    if request.mimetype != 'multipart/form-data':
-        return jsonify(code='BPE-002001', message='Неверный Content-Type HTTP-запроса'), 400
+    if request.mimetype != "multipart/form-data":
+        return (
+            jsonify(code="BPE-002001", message="Неверный Content-Type HTTP-запроса"),
+            400,
+        )
 
-    metadata = json.loads(request.form['metadata'])
+    metadata = json.loads(request.form["metadata"])
     if metadata is None:
-        return jsonify(code='BPE-002001', message='invalid metadate'), 400
+        return jsonify(code="BPE-002001", message="invalid metadate"), 400
 
-    if metadata['mnemonic'] != 'move-instructions':
-        return jsonify(code='BPE-002001', message='invalid mnemonic'), 400
+    if metadata["mnemonic"] != "move-instructions":
+        return jsonify(code="BPE-002001", message="invalid mnemonic"), 400
 
     # actions = metadata['actions']
     # MVP: assume that we get 1 file and 1 action
     # if len(request.files) != len(actions):
     #     return jsonify(code='BPE-002001', message='actions count mismatch with files count'), 400
 
-    video = request.files['bio_sample']
+    video = request.files["bio_sample"]
     if video is None:
-        return jsonify(code='BPE-002001', message='invalid bio_sample'), 400
+        return jsonify(code="BPE-002001", message="invalid bio_sample"), 400
 
-    if video.content_type != 'video/mp4': # TODO move to cfg and add other formats
-        return jsonify(code='BPE-002001', message='invalid bio_sample content_type'), 400
+    if video.content_type != "video/mp4":  # TODO move to cfg and add other formats
+        return (
+            jsonify(code="BPE-002001", message="invalid bio_sample content_type"),
+            400,
+        )
 
     # TODO remove. no need to save file on disk
     # tmp_file = 'video_' + str(uuid.uuid4()) + '.jpg'
